@@ -1,6 +1,6 @@
 const cron = require("node-cron");
 var problemNumber = 0;
-var day = 1;
+var day = 2;
 
 var problemList = [
   {
@@ -1435,9 +1435,9 @@ var problemList = [
   },
 ];
 
-require('dotenv').config();
+require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
-const token = process.env.TOKEN
+const token = process.env.TOKEN;
 
 const userList = [];
 
