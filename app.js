@@ -1435,8 +1435,9 @@ var problemList = [
   },
 ];
 
+require('dotenv').config();
 const TelegramBot = require("node-telegram-bot-api");
-const token = "6960600664:AAGkO-__S5ON82E7y4zzlsprgCndX0yDP14";
+const token = process.env.TOKEN
 
 const userList = [];
 
