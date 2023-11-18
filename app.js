@@ -1,6 +1,35 @@
 const cron = require("node-cron");
-var problemNumber = 0;
-var day = 2;
+const mongoose = require("mongoose");
+const { connectToDatabase, getDatabase } = require("./databaseConn");
+
+require("dotenv").config();
+const TelegramBot = require("node-telegram-bot-api");
+const token = process.env.TOKEN;
+
+const bot = new TelegramBot(token, { polling: true });
+
+async function main() {
+  await connectToDatabase();
+
+  try {
+    bot.on("new_chat_members", async (msg) => {
+      const groupChatId = msg.chat.id;
+      const newMembers = msg.new_chat_members;
+
+      console.log(`Bot added to group: ${groupChatId}`);
+      console.log("New members:", newMembers);
+
+      const result = await collection.insertOne(data);
+      console.log("Document inserted:", result.insertedId);
+    });
+  } catch (error) {
+    console.error("Error performing database operation", error);
+  } finally {
+    console.log("Disconnected from the database");
+  }
+}
+
+main().catch(console.error);
 
 var problemList = [
   {
@@ -1435,14 +1464,6 @@ var problemList = [
   },
 ];
 
-require("dotenv").config();
-const TelegramBot = require("node-telegram-bot-api");
-const token = process.env.TOKEN;
-
-const userList = [];
-
-const bot = new TelegramBot(token, { polling: true });
-
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   console.log("the starter name is: " + msg.from.first_name);
@@ -1453,6 +1474,7 @@ bot.onText(/\/start/, (msg) => {
     parse_mode: "Markdown",
   });
   console.log(msg);
+  console.log();
 });
 
 bot.onText(/\/help/, (msg) => {
@@ -1516,7 +1538,7 @@ function fetchDailyProblem() {
     day: -1,
   };
 }
-
+let day = 1;
 function sendDailyProblem() {
   const problem = fetchDailyProblem();
   console.log(problem);
