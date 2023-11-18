@@ -1,8 +1,9 @@
 const cron = require("node-cron");
 const mongoose = require("mongoose");
 const { connectToDatabase, getDatabase } = require("./databaseConn");
-
+const { findOrCreateUser, printAllUsers } = require("./controllers/userController");
 require("dotenv").config();
+
 const TelegramBot = require("node-telegram-bot-api");
 const token = process.env.TOKEN;
 
@@ -24,8 +25,6 @@ async function main() {
     });
   } catch (error) {
     console.error("Error performing database operation", error);
-  } finally {
-    console.log("Disconnected from the database");
   }
 }
 
@@ -72,24 +71,20 @@ Happy coding! 🚀✨`;
   });
 });
 
-bot.onText(/\/register/, (msg) => {
-  console.log(userList);
-  const userId = msg.from.id;
-  const chatId = msg.chat.id;
-  if (userList.some((users) => users.id == userId)) {
-    bot.sendMessage(chatId, "*You* are already registered.", {
-      parse_mode: "Markdown",
-    });
-    return;
+bot.onText(/\/register/, async (msg) => {
+   // TODO: Task for ishak :- if user starts the bot from private chat handle the functionality
+
+  // check if the /register command is from private chat
+  const userId = msg.chat.id;
+  const isPrivate = msg.chat.type === "private";
+
+  if (isPrivate) {
+    console.log("this text is from the private chat");
+    // check if the user exist orady in the users collection if not create it 
+    const fOCResponse = await findOrCreateUser(msg);
+    bot.sendMessage(userId, fOCResponse);
+    // printAllUsers()
   }
-  const user = {
-    id: userId,
-    Fname: msg.from.first_name,
-    username: msg.from.username,
-  };
-  console.log(user);
-  userList.push(user);
-  bot.sendMessage(msg.from.id, "Successfully Registered!");
 });
 
 function fetchDailyProblem() {
