@@ -1,24 +1,14 @@
-const { log } = require("console");
 const { default: mongoose } = require("mongoose");
 
 require("dotenv").config();
-const uri =
-  "mongodb+srv://nebiyumusbah378:nebiyusadamishaq@cluster0.tlhkvat.mongodb.net/";
-
-let client;
+const url = process.env.DATA_BASE_URL;
 
 async function connectToDatabase() {
   try {
-    const uri =
-      "mongodb+srv://nebiyumusbah378:nebiyusadamishaq@cluster0.tlhkvat.mongodb.net/";
-    if (mongoose.connection.readyState != 1) {
-      await mongoose.connect(uri);
-      console.log("Connected to the database");
-    } else {
-      console.log("Database already connected!");
-    }
+    await mongoose.connect(url);
+    console.log("Connected to the database");
   } catch (error) {
-    console.error(error);
+    console.log("DATA BASE CONNECTION ERROR : ",error);
   }
 }
 
