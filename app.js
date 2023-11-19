@@ -1,13 +1,10 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
 const cron = require("node-cron");
+const UserModel = require("./models/UserModel");
 const { connectToDatabase, getDatabase } = require("./databaseConn");
 const { getDailyUserQuession } = require("./controllers/user/getQuession");
-const UserModel = require("./models/UserModel");
-const {
-  findOrCreateUser,
-  printAllUsers,
-} = require("./controllers/user/userController");
+const {findOrCreateUser,printAllUsers,} = require("./controllers/user/userController");
 
 // SETUP
 const token = process.env.TOKEN;
