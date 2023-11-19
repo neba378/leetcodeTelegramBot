@@ -1,10 +1,15 @@
-const cron = require("node-cron");
-const mongoose = require("mongoose");
-const { connectToDatabase, getDatabase } = require("./databaseConn");
-const { findOrCreateUser, printAllUsers } = require("./controllers/userController");
 require("dotenv").config();
-
 const TelegramBot = require("node-telegram-bot-api");
+const cron = require("node-cron");
+const { connectToDatabase, getDatabase } = require("./databaseConn");
+const { getDailyUserQuession } = require("./controllers/user/getQuession");
+const UserModel = require("./models/UserModel");
+const {
+  findOrCreateUser,
+  printAllUsers,
+} = require("./controllers/user/userController");
+
+// SETUP
 const token = process.env.TOKEN;
 
 const bot = new TelegramBot(token, { polling: true });
@@ -72,18 +77,17 @@ Happy coding! 🚀✨`;
 });
 
 bot.onText(/\/register/, async (msg) => {
-   // TODO: Task for ishak :- if user starts the bot from private chat handle the functionality
+  // TODO: Task for ishak :- if user starts the bot from private chat handle the functionality
 
   // check if the /register command is from private chat
   const userId = msg.chat.id;
   const isPrivate = msg.chat.type === "private";
 
   if (isPrivate) {
-    console.log("this text is from the private chat");
-    // check if the user exist orady in the users collection if not create it 
+    // check if the user exist orady in the users collection if not create it
     const fOCResponse = await findOrCreateUser(msg);
     bot.sendMessage(userId, fOCResponse);
-    // printAllUsers()
+    printAllUsers();
   }
 });
 
@@ -123,4 +127,40 @@ function sendDailyProblem() {
 cron.schedule("26 10 * * *", () => {
   sendDailyProblem();
   console.log("sent!");
+});
+
+// TODO: TASK: FOR ISHAK GIVE A DAYILY QUESSION FOR USERS
+cron.schedule("*/30 * * * * *", async () => {
+  // GET ALL USERS
+  const users = await UserModel.find({});
+
+  // Send dayliy quession for all users
+
+  users.map(async (user) => {
+    const { day, solved } = user;
+    console.log(Object.keys(user.qList));
+    // pick a qusseion based on user data
+    const pickedQuession = getDailyUserQuession(user);
+
+    // send the quesstion for the user
+
+    if (pickedQuession) {
+      const { title, titleSlug, difficulty, frontendQuestionId } =
+        pickedQuession;
+      const message = `#Day${day} Challenge \n  \n Title: ${title} \n Link: https://leetcode.com/problems/${titleSlug} \n Difficulty : ${difficulty} \n Solved: ${solved} \n \nCongratulations on completing the challenge! 🎉 You've now conquered ${
+        solved + 1
+      } coding challenges. Keep up the great work! Each solved challenge brings you one step closer to mastering your coding skills. `;
+
+      console.log(frontendQuestionId);
+      // send the quesion to the user
+      bot.sendMessage(user._id, message);
+
+      // save the quession on the user quession list
+      user.qList[frontendQuestionId] = 1;
+      user.markModified("qList");
+      user.day += 1;
+
+      user.save();
+    }
+  });
 });

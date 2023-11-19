@@ -6,8 +6,11 @@ const userSchema = new mongoose.Schema({
     lastName: String,
     username: String,
 
-    solved: Boolean,
-    qList: Object,
+    solved: Number,
+    qList: {
+        type: Object,
+        default: {},
+      },
     day: Number,
     createdAt: Date,
 

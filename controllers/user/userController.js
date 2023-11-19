@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const UserModel = require("../models/UserModel");
+const UserModel = require("../../models/UserModel");
 
 const findOrCreateUser = async (msg) => {
   const { id, first_name, last_name, username } = msg.chat;
@@ -9,7 +9,7 @@ const findOrCreateUser = async (msg) => {
 
     if (user) {
       console.log("user orady exist");
-    //   await UserModel.deleteOne({_id:id})
+      // await UserModel.deleteOne({ _id: id });
       return `User : @${username} already registerd. Thankyou :)`;
     }
 
@@ -21,7 +21,7 @@ const findOrCreateUser = async (msg) => {
       lastName: last_name,
       username: username,
       solved: 0,
-      qList: {},
+      qList:{},
       day: 1,
       createdAt: new Date(),
     });
@@ -33,8 +33,8 @@ const findOrCreateUser = async (msg) => {
 };
 
 const printAllUsers = async () => {
-    const users = await UserModel.find({})
-    console.log(users)
-}
+  const users = await UserModel.find({});
+  console.log(users);
+};
 
-module.exports = { findOrCreateUser,printAllUsers };
+module.exports = { findOrCreateUser, printAllUsers };
