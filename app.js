@@ -138,7 +138,6 @@ cron.schedule("*/30 * * * * *", async () => {
 
   users.map(async (user) => {
     const { day, solved } = user;
-    console.log(Object.keys(user.qList));
     // pick a qusseion based on user data
     const pickedQuession = getDailyUserQuession(user);
 
@@ -151,11 +150,10 @@ cron.schedule("*/30 * * * * *", async () => {
         solved + 1
       } coding challenges. Keep up the great work! Each solved challenge brings you one step closer to mastering your coding skills. `;
 
-      console.log(frontendQuestionId);
       // send the quesion to the user
       bot.sendMessage(user._id, message);
 
-      // save the quession on the user quession list
+      // save the quession on the user quession list and incrase the day
       user.qList[frontendQuestionId] = 1;
       user.markModified("qList");
       user.day += 1;
