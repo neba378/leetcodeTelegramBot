@@ -3,7 +3,8 @@ const UserModel = require("../../models/UserModel");
 const { connectToDatabase } = require("../../databaseConn");
 
 const findOrCreateUser = async (msg) => {
-  const { id, first_name, last_name, username } = msg.chat;
+  const { id, first_name, last_name, username } = msg.from;
+
   try {
     // Check if the user exists
     let user = await UserModel.findOne({ _id: id });
@@ -27,7 +28,7 @@ const findOrCreateUser = async (msg) => {
       createdAt: new Date(),
     });
 
-    console.log("Created User:", user);
+    console.log("Created User:");
     return `User : @${username} successfully registered. Thankyou :)`;
   } catch (error) {
     console.error("Error while creating a User:", error);
