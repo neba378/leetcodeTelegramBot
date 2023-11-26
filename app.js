@@ -77,11 +77,11 @@ bot.onText(/\/register/, async (msg) => {
   // TODO: Task for ishak :- if user starts the bot from private chat handle the functionality
 
   // check if the /register command is from private chat
-  const userId = msg.chat.id;
+  const userId = msg.from.id;
   const isPrivate = msg.chat.type === "private";
 
   if (isPrivate) {
-    // check if the user exist orady in the users collection if not create it
+    // check if the user exist already in the users collection if not create it
     const fOCResponse = await findOrCreateUser(msg);
     bot.sendMessage(userId, fOCResponse);
     printAllUsers();

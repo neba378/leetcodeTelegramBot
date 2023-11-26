@@ -2,7 +2,8 @@ const mongoose = require("mongoose");
 const UserModel = require("../../models/UserModel");
 
 const findOrCreateUser = async (msg) => {
-  const { id, first_name, last_name, username } = msg.chat;
+  const { id, first_name, last_name, username } = msg.from;
+
   try {
     // Check if the user exists
     let user = await UserModel.findOne({ _id: id });
@@ -21,7 +22,7 @@ const findOrCreateUser = async (msg) => {
       lastName: last_name,
       username: username,
       solved: 0,
-      qList:{},
+      qList: {},
       day: 1,
       createdAt: new Date(),
     });
