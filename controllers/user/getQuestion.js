@@ -1,7 +1,7 @@
 const easy = require("../../data/topInterviewQuessionsEasyList145.json");
 const medium = require("../../data/topInterviewQuessionMediumList86.json");
 
-const getDailyUserQuession = (user) => {
+const getDailyUserQuestion = (user) => {
   const { day, qList } = user;
   const { questions: easyQ } = easy.data.problemsetQuestionList;
   const { questions: mediumQ } = medium.data.problemsetQuestionList;
@@ -46,7 +46,7 @@ const getDailyUserQuession = (user) => {
   }
 };
 
-module.exports = { getDailyUserQuession };
+module.exports = { getDailyUserQuestion };
 
 // problemsetQuestionList": {
 //     "total": 86,

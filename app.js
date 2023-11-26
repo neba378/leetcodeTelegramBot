@@ -1,36 +1,37 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
 const cron = require("node-cron");
+const communityModel = require("./models/communityModel");
+
+//models
 const UserModel = require("./models/UserModel");
+
 const { connectToDatabase, getDatabase } = require("./databaseConn");
-const { getDailyUserQuession } = require("./controllers/user/getQuession");
-const {findOrCreateUser,printAllUsers,} = require("./controllers/user/userController");
+//controllers
+const status = require("./controllers/Community/memberStatus");
+const {
+  createMember,
+  addOne,
+} = require("./controllers/Community/RegisterMember");
+const { getDailyUserQuestion } = require("./controllers/user/getQuestion");
+
+const resetCommunity = require("./controllers/Community/resetCommunity");
+
+const {
+  findOrCreateUser,
+  printAllUsers,
+} = require("./controllers/user/userController");
+
+const {
+  createCommunity,
+  printAllGroups,
+} = require("./controllers/Community/CommunityController");
+const RegisterMember = require("./controllers/Community/RegisterMember");
 
 // SETUP
 const token = process.env.TOKEN;
 
 const bot = new TelegramBot(token, { polling: true });
-
-async function main() {
-  await connectToDatabase();
-
-  try {
-    bot.on("new_chat_members", async (msg) => {
-      const groupChatId = msg.chat.id;
-      const newMembers = msg.new_chat_members;
-
-      console.log(`Bot added to group: ${groupChatId}`);
-      console.log("New members:", newMembers);
-
-      const result = await collection.insertOne(data);
-      console.log("Document inserted:", result.insertedId);
-    });
-  } catch (error) {
-    console.error("Error performing database operation", error);
-  }
-}
-
-main().catch(console.error);
 
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
@@ -57,7 +58,7 @@ Welcome to the help manual for the LeetCode Daily Problems Bot! This guide will 
 
 3️⃣ /submit <solution> - Submit your solution to the current daily problem. Replace <solution> with your code or algorithmic approach. Be sure to double-check your solution before submitting.
 
-4️⃣ /leaderboard - View the leaderboard and see the top performers who have solved the most problems. Compete with fellow enthusiasts and strive to climb up the ranks.
+4️⃣ /leader-board - View the leader-board and see the top performers who have solved the most problems. Compete with fellow enthusiasts and strive to climb up the ranks.
 
 5️⃣ /recommend - Get a random recommendation from the vast LeetCode problem collection. Use this command when you want to tackle a challenge outside of the daily problem.
 
@@ -79,70 +80,32 @@ bot.onText(/\/register/, async (msg) => {
   // check if the /register command is from private chat
   const userId = msg.from.id;
   const isPrivate = msg.chat.type === "private";
-
+  connectToDatabase();
   if (isPrivate) {
-    // check if the user exist already in the users collection if not create it
+    // check if the user exists already in the users collection if not create it
     const fOCResponse = await findOrCreateUser(msg);
     bot.sendMessage(userId, fOCResponse);
     printAllUsers();
   }
 });
 
-function fetchDailyProblem() {
-  try {
-    return problemList[problemNumber++];
-  } catch (error) {
-    console.log("Index out of range");
-  }
-  return {
-    title: "Sorry, No questions for today!",
-    description: "None",
-    link: "",
-    day: -1,
-  };
-}
-let day = 1;
-function sendDailyProblem() {
-  const problem = fetchDailyProblem();
-  console.log(problem);
-
-  userList.forEach((user) => {
-    const message =
-      "📚 *Daily LeetCode Problem*\n\n" +
-      day++ +
-      "\n\n" +
-      "Title: " +
-      problem.title +
-      "\n\n" +
-      "Link :\n\n" +
-      "https://leetcode.com/problems/" +
-      problem.titleSlug;
-    bot.sendMessage(user.id, message, { parse_mode: "Markdown" });
-  });
-}
-
-cron.schedule("26 10 * * *", () => {
-  sendDailyProblem();
-  console.log("sent!");
-});
-
-// TODO: TASK: FOR ISHAK GIVE A DAYILY QUESSION FOR USERS
+// TODO: TASK: FOR ISHAK GIVE A DAILY question FOR USERS
 cron.schedule("*/30 * * * * *", async () => {
   // GET ALL USERS
   const users = await UserModel.find({});
 
-  // Send dayliy quession for all users
+  // Send question question for all users
 
   users.map(async (user) => {
     const { day, solved } = user;
-    // pick a qusseion based on user data
-    const pickedQuession = getDailyUserQuession(user);
+    // pick a question based on user data
+    const pickedQuestion = getDailyUserQuestion(user);
 
-    // send the quesstion for the user
+    // send the question for the user
 
-    if (pickedQuession) {
+    if (pickedQuestion) {
       const { title, titleSlug, difficulty, frontendQuestionId } =
-        pickedQuession;
+        pickedQuestion;
       const message = `#Day${day} Challenge \n  \n Title: ${title} \n Link: https://leetcode.com/problems/${titleSlug} \n Difficulty : ${difficulty} \n Solved: ${solved} \n \nCongratulations on completing the challenge! 🎉 You've now conquered ${
         solved + 1
       } coding challenges. Keep up the great work! Each solved challenge brings you one step closer to mastering your coding skills. `;
@@ -150,7 +113,7 @@ cron.schedule("*/30 * * * * *", async () => {
       // send the quesion to the user
       bot.sendMessage(user._id, message);
 
-      // save the quession on the user quession list and incrase the day
+      // save the question on the user question list and incrase the day
       user.qList[frontendQuestionId] = 1;
       user.markModified("qList");
       user.day += 1;
@@ -158,4 +121,97 @@ cron.schedule("*/30 * * * * *", async () => {
       user.save();
     }
   });
+});
+
+bot.onText(/\/got/, async (msg) => {
+  const userId = msg.chat.id;
+  const isPrivate = msg.chat.type === "private";
+  if (isPrivate) {
+    const fOCResponse = await findOrCreateUser(msg);
+    bot.sendMessage(userId, fOCResponse);
+    printAllUsers();
+  }
+});
+
+//code to create community
+bot.onText(/\/stCommunity/, (msg) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  connectToDatabase();
+  bot.getChatMember(chatId, userId).then(async (chatMember) => {
+    // Check if the user is an administrator
+    if (
+      chatMember.status === "administrator" ||
+      chatMember.status == "creator"
+    ) {
+      const response = await createCommunity(msg);
+      bot.sendMessage(chatId, response);
+    } else {
+      bot.sendMessage(chatId, "You are not an admin.");
+      console.log(
+        "Community Not Created! because " + chatMember.status + " is no Admin!"
+      );
+    }
+  });
+});
+
+//code for creating new member in an existing group
+bot.onText(/\/submit/, async (msg) => {
+  await connectToDatabase();
+
+  const chatId = msg.chat.id;
+  const response = await createMember(msg);
+  if (response == "Good") {
+    //sadam's validator function here
+
+    if (true) {
+      bot.sendMessage(chatId, "Accepted", {
+        reply_to_message_id: msg.message_id,
+      });
+      addOne(msg);
+    } else {
+      bot.sendMessage(chatId, "Not accepted! Try again");
+    }
+  }
+});
+//To reset the community
+bot.onText(/\/reset/, async (msg) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  await connectToDatabase();
+  bot.getChatMember(chatId, userId).then(async (chatMember) => {
+    // Check if the user is an administrator
+    if (
+      chatMember.status === "administrator" ||
+      chatMember.status == "creator"
+    ) {
+      await resetCommunity(msg);
+      bot.sendMessage(msg.chat.id, "Successfully Reset");
+    } else {
+      bot.sendMessage(chatId, "You are not an admin.");
+      console.log("not reset! because " + chatMember.status + " is no Admin!");
+    }
+  });
+});
+
+// show status of member
+bot.onText(/\/myStatus/, async (msg) => {
+  connectToDatabase();
+  const res = await status(msg);
+  if (res != 0) {
+    let community = await communityModel.findOne({
+      _id: msg.chat.id,
+    });
+    const tot = community.day;
+    const message = `Your status 
+  \nSolved: ${res.solved}/${tot}
+  \nYou can do more than that :) `;
+    bot.sendMessage(msg.chat.id, message, {
+      reply_to_message_id: msg.message_id,
+    });
+  } else {
+    bot.sendMessage(msg.chat.id, "Not registered", {
+      reply_to_message_id: msg.message_id,
+    });
+  }
 });
