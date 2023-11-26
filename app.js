@@ -3,34 +3,18 @@ const TelegramBot = require("node-telegram-bot-api");
 const cron = require("node-cron");
 const { connectToDatabase, getDatabase } = require("./databaseConn");
 
-//models
-const communityModel = require("./models/communityModel");
-const UserModel = require("./models/UserModel");
-
 //controllers
-const status = require("./controllers/Community/memberStatus");
-const {
-  createMember,
-  addOne,
-} = require("./controllers/Community/RegisterMember");
-const { getDailyUserQuestion } = require("./controllers/user/getQuestion");
-
-const resetCommunity = require("./controllers/Community/resetCommunity");
-
 const {
   findOrCreateUser,
   printAllUsers,
 } = require("./controllers/user/userController");
 
-const {
-  createCommunity,
-  printAllGroups,
-} = require("./controllers/Community/CommunityController");
-const RegisterMember = require("./controllers/Community/RegisterMember");
-const { resetUser } = require("./controllers/user/resetUser");
-const { getUserStatus } = require("./controllers/user/getStatus");
-const { saveSubmiton } = require("./controllers/user/saveSubmition");
-const { getLeaderBoard } = require("./controllers/user/getLeaderBoard");
+// views
+const sendDaily = require("./views/tasks/sendDaily");
+const leaderBoard = require("./views/leaderBoard");
+const myStatus = require("./views/myStatus");
+const reset = require("./views/reset");
+const submit = require("./views/submit");
 
 // SETUP
 const token = process.env.TOKEN;
@@ -93,188 +77,34 @@ bot.onText(/\/register/, async (msg) => {
   }
 });
 
-
-
-//code to create community
-bot.onText(/\/stCommunity/, (msg) => {
-  const chatId = msg.chat.id;
-  const userId = msg.from.id;
-  connectToDatabase();
-  bot.getChatMember(chatId, userId).then(async (chatMember) => {
-    // Check if the user is an administrator
-    if (
-      chatMember.status === "administrator" ||
-      chatMember.status == "creator"
-    ) {
-      const response = await createCommunity(msg);
-      bot.sendMessage(chatId, response);
-    } else {
-      bot.sendMessage(chatId, "You are not an admin.");
-      console.log(
-        "Community Not Created! because " + chatMember.status + " is no Admin!"
-      );
-    }
-  });
-});
-
 // save summtion for both Users and Members
-
 bot.onText(/\/submit/, async (msg) => {
-  await connectToDatabase();
-
-  const chatId = msg.chat.id;
-  const isPrivate = msg.chat.type === "private";
-
-  if (isPrivate) {
-    const isValidSoluion = true
-
-    if (isValidSoluion) {
-      const response = await saveSubmiton(msg);
-      bot.sendMessage(chatId, response)
-
-
-    } else {
-      bot.sendMessage(chatId, "Not accepted! Try again")
-    }
-
-  } else {
-
-    //code for creating new member in an existing group and saving there summtion 
-
-    const response = await createMember(msg);
-    if (response == "Good") {
-      //sadam's validator function here
-  
-      if (true) {
-        bot.sendMessage(chatId, "Accepted", {
-          reply_to_message_id: msg.message_id,
-        });
-        addOne(msg);
-      } else {
-        bot.sendMessage(chatId, "Not accepted! Try again");
-      }
-  }
-  }
+  submit(msg, bot);
 });
 
 // reset the Community or User
 bot.onText(/\/reset/, async (msg) => {
-  await connectToDatabase();
-
-  const chatId = msg.chat.id;
-  const userId = msg.from.id;
-  const isPrivate = msg.chat.type === "private";
-
-  if (isPrivate) {
-
-    const response = await resetUser(msg)
-    bot.sendMessage(chatId,response)
-
-  } else {
-    bot.getChatMember(chatId, userId).then(async (chatMember) => {
-      // Check if the user is an administrator
-      if (
-        chatMember.status === "administrator" ||
-        chatMember.status == "creator"
-      ) {
-        await resetCommunity(msg);
-        bot.sendMessage(msg.chat.id, "Successfully Reset");
-      } else {
-        bot.sendMessage(chatId, "You are not an admin.");
-        console.log(
-          "not reset! because " + chatMember.status + " is no Admin!"
-        );
-      }
-    });
-  }
+  reset(msg, bot);
 });
 
 // show status of member or User
 bot.onText(/\/myStatus/, async (msg) => {
-  connectToDatabase();
-
-  const chatId = msg.chat.id;
-  const isPrivate = msg.chat.type === "private";
-  
-  if (isPrivate) {
-    const response = await getUserStatus(msg)
-    bot.sendMessage(chatId,response)
-    
-  } else {
-    const res = await status(msg);
-    if (res != 0) {
-      let community = await communityModel.findOne({
-        _id: msg.chat.id,
-      });
-      const tot = community.day;
-      const message = `Your status 
-    \nSolved: ${res.solved}/${tot}
-    \nYou can do more than that :) `;
-      bot.sendMessage(msg.chat.id, message, {
-        reply_to_message_id: msg.message_id,
-      });
-    } else {
-      bot.sendMessage(msg.chat.id, "Not registered", {
-        reply_to_message_id: msg.message_id,
-      });
-    } 
-  }
+  myStatus(msg, bot);
 });
-
 
 // get Leader Board
 
 bot.onText(/\/leaderBoard/, async (msg) => {
-  await connectToDatabase();
+  leaderBoard(msg, bot);
+});
 
-  const chatId = msg.chat.id;
-  const userId = msg.from.id;
-  const isPrivate = msg.chat.type === "private";
+// -------------------------------------//
 
-  if (isPrivate) {
+// ---   SECADULED TASKS SECTION ------ //
 
-    const response = await getLeaderBoard(msg)
-    bot.sendMessage(userId,response)
+// -------------------------------------//
 
-  } else {
-    // TODO: task for SADAM to send the leader Board of top 10 Members of the group
-    };
-  }
-);
-
-//  SECADULED TASKS
-
-// SEND  DAILY question FOR USERS
-
+// send dayily quession for users
 cron.schedule("*/30 10 10 * * *", async () => {
-  // GET ALL USERS
-  const users = await UserModel.find({});
-
-  // Send question question for all users
-
-  users.map(async (user) => {
-    const { day, solved } = user;
-    // pick a question based on user data
-    const pickedQuestion = getDailyUserQuestion(user);
-
-    // send the question for the user
-
-    if (pickedQuestion) {
-      const { title, titleSlug, difficulty, frontendQuestionId } =
-        pickedQuestion;
-      const message = `#Day${day} Challenge \n  \n Title: ${title} \n Link: https://leetcode.com/problems/${titleSlug} \n Difficulty : ${difficulty} \n Solved: ${solved} \n \nCongratulations on completing the challenge! 🎉 You've now conquered ${
-        solved + 1
-      } coding challenges. Keep up the great work! Each solved challenge brings you one step closer to mastering your coding skills. `;
-
-      // send the quesion to the user
-      bot.sendMessage(user._id, message);
-
-      // save the question on the user question list and incrase the day
-      user.qList[frontendQuestionId] = 1;
-      user.markModified("qList");
-      user.day += 1;
-
-      user.save();
-    }
-  });
+  sendDaily(bot);
 });
