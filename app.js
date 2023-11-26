@@ -1,17 +1,21 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
 const cron = require("node-cron");
+const communityModel = require("./models/communityModel");
 
 //models
 const UserModel = require("./models/UserModel");
 
 const { connectToDatabase, getDatabase } = require("./databaseConn");
 //controllers
+const status = require("./controllers/Community/memberStatus");
 const {
   createMember,
   addOne,
 } = require("./controllers/Community/RegisterMember");
 const { getDailyUserQuestion } = require("./controllers/user/getQuestion");
+
+const resetCommunity = require("./controllers/Community/resetCommunity");
 
 const {
   findOrCreateUser,
@@ -153,7 +157,7 @@ bot.onText(/\/stCommunity/, (msg) => {
 
 //code for creating new member in an existing group
 bot.onText(/\/submit/, async (msg) => {
-  connectToDatabase();
+  await connectToDatabase();
 
   const chatId = msg.chat.id;
   const response = await createMember(msg);
@@ -168,5 +172,46 @@ bot.onText(/\/submit/, async (msg) => {
     } else {
       bot.sendMessage(chatId, "Not accepted! Try again");
     }
+  }
+});
+//To reset the community
+bot.onText(/\/reset/, async (msg) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  await connectToDatabase();
+  bot.getChatMember(chatId, userId).then(async (chatMember) => {
+    // Check if the user is an administrator
+    if (
+      chatMember.status === "administrator" ||
+      chatMember.status == "creator"
+    ) {
+      await resetCommunity(msg);
+      bot.sendMessage(msg.chat.id, "Successfully Reset");
+    } else {
+      bot.sendMessage(chatId, "You are not an admin.");
+      console.log("not reset! because " + chatMember.status + " is no Admin!");
+    }
+  });
+});
+
+// show status of member
+bot.onText(/\/myStatus/, async (msg) => {
+  connectToDatabase();
+  const res = await status(msg);
+  if (res != 0) {
+    let community = await communityModel.findOne({
+      _id: msg.chat.id,
+    });
+    const tot = community.day;
+    const message = `Your status 
+  \nSolved: ${res.solved}/${tot}
+  \nYou can do more than that :) `;
+    bot.sendMessage(msg.chat.id, message, {
+      reply_to_message_id: msg.message_id,
+    });
+  } else {
+    bot.sendMessage(msg.chat.id, "Not registered", {
+      reply_to_message_id: msg.message_id,
+    });
   }
 });
