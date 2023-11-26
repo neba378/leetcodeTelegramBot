@@ -28,7 +28,7 @@ const findOrCreateUser = async (msg) => {
       createdAt: new Date(),
     });
 
-    console.log("Created User:", user);
+    console.log("Created User:");
     return `User : @${username} successfully registered. Thankyou :)`;
   } catch (error) {
     console.error("Error while creating a User:", error);
