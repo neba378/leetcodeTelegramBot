@@ -1,4 +1,5 @@
-require("dotenv").config();
+// Base Packages 
+const env = require("dotenv");
 const TelegramBot = require("node-telegram-bot-api");
 const cron = require("node-cron");
 const { connectToDatabase, getDatabase } = require("./databaseConn");
@@ -17,9 +18,18 @@ const reset = require("./views/reset");
 const submit = require("./views/submit");
 
 // SETUP
+env.config()
 const token = process.env.TOKEN;
-
 const bot = new TelegramBot(token, { polling: true });
+
+
+
+// -------------------------------------//
+
+// ---   GENERAL VIEW'S SECTION ------ //
+
+// -------------------------------------//
+
 
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
@@ -98,11 +108,15 @@ bot.onText(/\/leaderBoard/, async (msg) => {
   leaderBoard(msg, bot);
 });
 
-// -------------------------------------//
 
-// ---   SECADULED TASKS SECTION ------ //
 
 // -------------------------------------//
+
+// ---   SCEADULED TASKS SECTION ------ //
+
+// -------------------------------------//
+
+
 
 // send dayily quession for users
 cron.schedule("*/30 10 10 * * *", async () => {
