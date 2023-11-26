@@ -1,10 +1,3 @@
-
-// # check if the user exist 
-
-// # if not tell him the he don't have any history 
-
-// # if user then reset his porgress
-
 const UserModel = require('../../models/UserModel');
 
 const resetUser = async (msg) => {
