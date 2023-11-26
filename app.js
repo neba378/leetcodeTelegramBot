@@ -30,6 +30,7 @@ const RegisterMember = require("./controllers/Community/RegisterMember");
 const { resetUser } = require("./controllers/user/resetUser");
 const { getUserStatus } = require("./controllers/user/getStatus");
 const { saveSubmiton } = require("./controllers/user/saveSubmition");
+const { getLeaderBoard } = require("./controllers/user/getLeaderBoard");
 
 // SETUP
 const token = process.env.TOKEN;
@@ -219,6 +220,27 @@ bot.onText(/\/myStatus/, async (msg) => {
     } 
   }
 });
+
+
+// get Leader Board
+
+bot.onText(/\/leaderBoard/, async (msg) => {
+  await connectToDatabase();
+
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  const isPrivate = msg.chat.type === "private";
+
+  if (isPrivate) {
+
+    const response = await getLeaderBoard(msg)
+    bot.sendMessage(userId,response)
+
+  } else {
+    // TODO: task for SADAM to send the leader Board of top 10 Members of the group
+    };
+  }
+);
 
 //  SECADULED TASKS
 
